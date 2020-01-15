@@ -1,5 +1,8 @@
 #define LOWEST_VALUE 600
 #define HIGHEST_VALUE 1100
+
+#define LED_LEFT 6
+#define LED_RIGHT 9
 // pins
 int sensorLeft = A4;
 int sensorRight = A5;
@@ -33,22 +36,29 @@ void setup() {
   pinMode(sensorLeft, INPUT);
   pinMode(sensorRight, INPUT);
 
+  pinMode(LED_LEFT, OUTPUT);
+  pinMode(LED_RIGHT, OUTPUT);
+
   //Serial.println("Start measuring!");
 }
+
+//TODO
+// separate sampling for each sensor
 
 void loop() {
 
   //start sampling values
   if (sampleCount < intoHistogramSize) {
+    goForward();
     //put both sensor values into the histogram
     //intoHistogram(analogRead(sensorLeft));
     //delay(5);
-    intoHistogram(analogRead(sensorRight));
+    intoHistogram(analogRead(sensorLeft));
     delay(10);
     sampleCount += 1;
     //Serial.println(analogRead(sensorRight));
   } else {
-    
+    goForward();
     if (!foundMaxima) {
       Serial.println("finding maxima...");
       delay(10);
@@ -63,18 +73,67 @@ void loop() {
       Serial.print("black: "); Serial.println(blackValue);
     } else {
 
-      //int measureLeft = intoHistogram(analogRead(sensorLeft));
+      int measureLeft = intoHistogram(analogRead(sensorLeft));
       int measureRight = intoHistogram(analogRead(sensorRight));
 
-      classifyValue(measureRight);
-      //classifyValue(measureRight);
-      delay(500);
+      driveControl(classifyValue(measureRight), classifyValue(measureLeft));
+      delay(1000);
       // code goes here
       // check both photodiodes and calculate the direction
       // if one photodiode has a different value,
     }
 
   }
+}
+
+void driveControl(int left, int right) {
+  if (left == 0 && right == 2) {
+    goLeft();
+  }
+  if (left == 1 && right == 1) {
+    goLeft();
+  }
+  if (left == 2 && right == 1) {
+    goLeft();
+  }
+
+  if (left == 0 && right == 1) {
+    goRight();
+  }
+  if (left == 1 && right == 2) {
+    goRight();
+  }
+  if (left == 2 && right == 0) {
+    goRight();
+  }
+}
+
+void lampsOff() {
+  digitalWrite(LED_RIGHT, LOW);
+  digitalWrite(LED_LEFT, LOW);
+}
+
+void goForward() {
+  digitalWrite(LED_RIGHT, HIGH);
+  digitalWrite(LED_LEFT, HIGH);
+}
+
+void goBackward() {
+  digitalWrite(LED_RIGHT, HIGH);
+  digitalWrite(LED_LEFT, HIGH);
+  delay(500);
+  digitalWrite(LED_RIGHT, LOW);
+  digitalWrite(LED_LEFT, LOW);
+}
+
+void goLeft() {
+  digitalWrite(LED_RIGHT, LOW);
+  digitalWrite(LED_LEFT, HIGH);
+}
+
+void goRight() {
+  digitalWrite(LED_LEFT, LOW);
+  digitalWrite(LED_RIGHT, HIGH);
 }
 
 int classifyValue(int value) {
@@ -121,7 +180,7 @@ void findMaxima() {
     int _max = 0;
     int index = 0;
     for (int i = 1; i < (int) (histogramSize / 2); i++) {
-      if (valueHistogram[localMax[i]] > _max){
+      if (valueHistogram[localMax[i]] > _max) {
         _max = valueHistogram[localMax[i]];
         index = i;
       }
