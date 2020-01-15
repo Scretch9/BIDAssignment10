@@ -8,7 +8,7 @@ int sensorLeft = A4;
 int sensorRight = A5;
 
 //constants
-const int histogramSize = 100;
+const int histogramSize = 200;
 const int maxSensorValue = 1000;
 
 // flags
@@ -75,8 +75,11 @@ void loop() {
 
       int measureLeft = intoHistogram(analogRead(sensorLeft));
       int measureRight = intoHistogram(analogRead(sensorRight));
-
-      driveControl(classifyValue(measureRight), classifyValue(measureLeft));
+      int left = classifyValue(measureLeft);
+      int right = classifyValue(measureRight);
+      Serial.print("left: "); Serial.print(left);
+      Serial.print("right: "); Serial.println(right);
+      driveControl(left,right);
       delay(1000);
       // code goes here
       // check both photodiodes and calculate the direction
@@ -86,11 +89,11 @@ void loop() {
   }
 }
 
-void driveControl(int left, int right) {
+void driveControl(int left,int right) {
   if (left == 0 && right == 2) {
     goLeft();
   }
-  if (left == 1 && right == 1) {
+  if (left == 1 && right == 0) {
     goLeft();
   }
   if (left == 2 && right == 1) {
@@ -137,10 +140,10 @@ void goRight() {
 }
 
 int classifyValue(int value) {
-  if (value < upperThreshold) {
+  if (value < lowerThreshold) {
     Serial.println("0");
     return 0;
-  } else if (value < lowerThreshold) {
+  } else if (value < upperThreshold) {
     Serial.println("1");
     return 1;
   } else {
@@ -189,8 +192,8 @@ void findMaxima() {
     valueHistogram[localMax[index]] = 0;
   }
 
-  blackValue = 0;
-  whiteValue = 10000;
+  blackValue = 10000;
+  whiteValue = 0;
   int sum = 0;
   // associate three maxima with grey, white and black
   for (int i = 0; i < 3; ++i)
@@ -198,8 +201,8 @@ void findMaxima() {
     Serial.println(histogramPeaks[i]);
     delay(10);
     sum += histogramPeaks[i];
-    if (histogramPeaks[i] > blackValue) blackValue = histogramPeaks[i];
-    if (histogramPeaks[i] < whiteValue) whiteValue = histogramPeaks[i];
+    if (histogramPeaks[i] < blackValue) blackValue = histogramPeaks[i];
+    if (histogramPeaks[i] > whiteValue) whiteValue = histogramPeaks[i];
   }
 
   greyValue =  sum - whiteValue -  blackValue;
@@ -211,5 +214,4 @@ void findMaxima() {
 void computeThresholds() {
   upperThreshold = (int)((whiteValue + greyValue) / 2);
   lowerThreshold = (int)((blackValue + greyValue) / 2);
-
 }
